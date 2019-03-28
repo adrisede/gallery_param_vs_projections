@@ -1,0 +1,69 @@
+---
+title: "Check projections based on parameters"
+output: html_notebook
+---
+
+This workflow aims to test how different parameters affect the output of projection methods such as *t-SNE* and *UMAP*. 
+
+We'll pull the **VISp/ALM SMARTer** dataset to run *R-tSNE* and *uwot*(UMAP) and save the output coordinates in a tibble, with different settings in each row and the output stored within the row as a data.frame within a list.column. It will be easily accessible to build a shiny gallery app. 
+
+
+First, let's load the test data:
+
+```{r 1 Retrieve data}
+library(scrattch.io)
+library(Matrix)
+
+load("//allen/programs/celltypes/workgroups/rnaseqanalysis/yzizhen/SmartSeq_cells/V1_ALM/process_24411/select.markers.rda")
+
+tome <- "//allen/programs/celltypes/workgroups/rnaseqanalysis/shiny/tomes/facs/mouse_V1_ALM_20180520/transcrip.tome"
+
+# Load annotations
+anno <- read_tome_anno(tome)
+
+anno <- anno %>%
+  # Remove outlier clusters
+  dplyr::filter(cluster_id %in% 1:133)
+
+all_samples <- read_tome_sample_names(tome)
+all_genes <- read_tome_gene_names(tome)
+
+
+# Load count data
+counts <- read_tome_dgCMatrix(tome, "/data/exon")
+rownames(counts) <- all_samples
+colnames(counts) <- all_genes
+
+# Filter for markers
+counts <- counts[, select.markers]
+
+counts <- t(counts)
+
+# Filter for samples
+counts <- counts[,anno$sample_name]
+
+# log transform
+norm_counts <- log2(counts + 1)
+
+# convert to matrix for projection input
+norm_counts <- as.matrix(norm_counts)
+
+```
+
+A quick glimpse at the data we've just loaded:
+
+```{r 2 Glimpse data}
+
+library(DataExplorer)
+
+DataExplorer::introduce(anno)
+DataExplorer::plot_intro(anno)
+DataExplorer::plot_bar(anno, nrow = 2, ncol = 2)
+
+```
+
+
+```{r}
+
+```
+
