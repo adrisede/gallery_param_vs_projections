@@ -63,7 +63,3 @@ DataExplorer::plot_bar(anno, nrow = 2, ncol = 2)
 ```
 
 
-```{r}
-
-```
-

@@ -3,6 +3,7 @@ all: file.html
 clean: 
 rm -f file.md file.html figure.png
 
+<<<<<<< HEAD
 # declare targets that are not actual files to be made
 .PHONY: all clean
 
@@ -10,6 +11,10 @@ rm -f file.md file.html figure.png
 .DELETE_ON_ERROR:
 
 # do not delete intermediate files of a chain of pattern rules
+=======
+.PHONY: all clean
+.DELETE_ON_ERROR:
+>>>>>>> b341f48c278d246fad9d5e9587f997c27e64be25
 .SECONDARY:
 
 # Render a graphViz file
