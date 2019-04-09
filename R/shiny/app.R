@@ -32,7 +32,7 @@ anno <- anno[match(samples, anno$sample_name),]
 # Define UI for application, use bootstrap's grid system to layout app
 ui <- dashboardPage(
   
-
+  
   # Application title and message icon info
   dashboardHeader(
     title = "Projection parameter gallery",
@@ -59,7 +59,8 @@ ui <- dashboardPage(
     width = 200,
     sidebarMenu(
       menuItem("Cluster Samples", tabName = "clustersamples", icon = icon("chart-area")),
-      menuItem("Sample summary", tabName = "summary", icon = icon("table"))
+      menuItem("Sample summary", tabName = "summary", icon = icon("table")),
+      menuItem("Cluster genes", tabName = "clustergenes", icon = icon("chart-area"))
     )
   ),
   
@@ -252,17 +253,142 @@ ui <- dashboardPage(
       
       # second tab content
       tabItem(tabName = "summary", 
-          
+              
               fluidRow(column(4, valueBox("Dataset", "mouse_V1_ALM_20180520", icon = icon("database"), width = 11)),
-                  column(4, valueBox("Size", "23822 samples, 133 clusters", icon = icon("box"), width = 11))), 
+                       column(4, valueBox("Size", "23822 samples, 133 clusters", icon = icon("box"), width = 11))), 
               
               box(width = 8,
                   height = 1040,
                   status = "primary",
-                plotOutput("summary")))
-              )
+                  plotOutput("summary"))),
+      
+      
+      # third tab content
+      tabItem(tabName = "clustergenes",
+              
+              # left panel
+              box(
+                width = 6,
+                collapsible = TRUE, 
+                #title = "Parameters",
+                #solidHeader = TRUE,
+                status = "primary",
+                uiOutput("select_projection_method_left_genes"),
+                conditionalPanel(
+                  condition = "input.proj_method_left_genes == 'tsne'",
+                  fluidRow(column(6, uiOutput("select_initial_dims_left_genes")),
+                           column(6, uiOutput("select_perplexity_left_genes"))),
+                  fluidRow(column(6, uiOutput("select_theta_left_genes")),
+                           column(6, uiOutput("select_eta_left_genes"))),
+                  #uiOutput("select_exaggeration_factor_left"),
+                  fluidRow(column(6, uiOutput("select_exaggeration_factor_left_genes")),
+                           column(6, " ")),
+                  bsTooltip("select_initial_dims_left_genes", 
+                            "Num. dimensions that should be retained in initial PCA step",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_perplexity_left_genes", 
+                            "Number of effective nearest neighbors",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_theta_left_genes", 
+                            "Speed/accuracy trade-off (increase for less accuracy)",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_eta_left_genes", 
+                            "Learning rate (epsilon)",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_exaggeration_factor_left_genes", 
+                            "Factor used to multiply the matrix in the first part of the optimization",
+                            "right", trigger = "focus", options = list(container = "body"))
+                  
+                ),
+                conditionalPanel(
+                  condition = "input.proj_method_left_genes == 'umap'",
+                  fluidRow(column(6, uiOutput("select_neighbors_left_genes")),
+                           column(6, uiOutput("select_metric_left_genes"))),
+                  fluidRow(column(6, uiOutput("select_scale_left_genes")),
+                           column(6, uiOutput("select_init_left_genes"))),
+                  # fluidRow(column(6, " "),
+                  # column(6, " ")),
+                  bsTooltip("select_neighbors_left_genes", 
+                            "Size of local neighborhood used for manifold approximation",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_metric_left_genes", 
+                            "Distance metric to find nearest neighbors",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_scale_left_genes", 
+                            "Scaling to apply (determines how clustered the embedded points are)",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_init_left_genes", 
+                            "Init for coordinates: Laplacian (w/o noise, modified), Gaussian or scaled",
+                            "right", trigger = "focus", options = list(container = "body"))
+                )
+              ),
+              
+              # right panel
+              box(
+                width = 6,
+                collapsible = TRUE, 
+                #title = "Parameters",
+                #solidHeader = TRUE,
+                status = "info",
+                uiOutput("select_projection_method_right_genes"),
+                conditionalPanel(
+                  condition = "input.proj_method_right_genes == 'tsne'",
+                  fluidRow(column(6, uiOutput("select_initial_dims_right_genes")),
+                           column(6, uiOutput("select_perplexity_right_genes"))),
+                  fluidRow(column(6, uiOutput("select_theta_right_genes")),
+                           column(6, uiOutput("select_eta_right_genes"))),
+                  #uiOutput("select_exaggeration_factor_right")
+                  fluidRow(column(6, uiOutput("select_exaggeration_factor_right_genes")),
+                           column(6, " "))
+                ),
+                conditionalPanel(
+                  condition = "input.proj_method_right_genes == 'umap'",
+                  fluidRow(column(6, uiOutput("select_neighbors_right_genes")),
+                           column(6, uiOutput("select_metric_right_genes"))),
+                  fluidRow(column(6, uiOutput("select_scale_right_genes")),
+                           column(6, uiOutput("select_init_right_genes")))
+                  # fluidRow(column(6, " "),
+                  # column(6, " "))
+                )
+              ),
+              
+              # left plot
+              box(width = 6,
+                  status = "primary",
+                  withSpinner(plotOutput(
+                    "plot_left_genes", brush = brushOpts(id = "plot_left_brush_genes")), 
+                    type = 7, size = 0.4
+                  )),
+              
+              # right plot
+              box(width = 6,
+                  status = "info",
+                  withSpinner(plotOutput(
+                    "plot_right_genes", brush = brushOpts(id = "plot_right_brush_genes")), 
+                    type = 7, size = 0.4
+                  )),
+              
+              # info table left
+              box(width = 6,
+                  status = "primary",
+                  collapsible = TRUE,
+                  #collapsed = TRUE,
+                  dataTableOutput("table_left_genes")),
+              
+              # info table right
+              box(width = 6,
+                  status = "info",
+                  collapsible = TRUE,
+                  #collapsed = TRUE,
+                  dataTableOutput("table_right_genes"))
+      )
+      
     )
+    
+    
   )
+)
+
   
 
 
@@ -280,39 +406,10 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
 
-  
+  # collapse sidebar when loading
   addClass(selector = "body", class = "sidebar-collapse")
-  
-  output$summary <- renderPlot({
-    
-    anno_min <- select(anno, cluster_label, cluster_color) %>% 
-      unique()
-    
-    summary <- as.data.frame(with(anno, table(cluster_label))) %>%
-      left_join(anno_min, by = "cluster_label") %>%
-      arrange(desc(Freq)) 
-    
-    ggplot(summary, aes(x = reorder(cluster_label, Freq), 
-                        y = Freq, 
-                        color = cluster_color, 
-                        fill = cluster_color,
-                        alpha = 0.7)) +
-      geom_bar(stat = "identity") + 
-      geom_text(aes(label = Freq), 
-                hjust = -0.5, 
-                position = position_dodge(width = 0.8), 
-                size = 2) +
-      theme(axis.text.x = element_text(size = 10, angle = 90, hjust = 1, vjust = 1)) +
-      labs(y = "Number of samples within cluster", x = "Cluster name") +
-      scale_color_identity() +
-      scale_fill_identity() +
-      coord_flip() +
-      scale_alpha(guide = "none") +
-      theme_classic()
 
-  }, height = 1000, width = 550)  
   
-
   #######################
   ##     left BLOCK    ##
   #######################
@@ -882,10 +979,56 @@ server <- function(input, output, session) {
 content = paste0("Select a plot region to retrieve sample info and 
                  highlight their location on the adjacent plot. 
                  Click in white space to reset selection."), 
-            trigger = 'hover', placement = "bottom")
+            trigger = 'hover', placement = "top")
+  
+  
+  # reactive for summary data
+  summary <- reactive({
+    
+    anno_min <- select(anno, cluster_label, cluster_color) %>% 
+      unique()
+    
+    summary <- as.data.frame(with(anno, table(cluster_label))) %>%
+      left_join(anno_min, by = "cluster_label") %>%
+      arrange(desc(Freq)) 
+    
+    summary
+  })
+  
+  
+  # summary tab plot  
+  output$summary <- renderPlot({
+    
+    req(summary())
+    
+    summary <- summary()
+    
+    ggplot(summary, aes(x = reorder(cluster_label, Freq), 
+                        y = Freq, 
+                        color = cluster_color, 
+                        fill = cluster_color,
+                        alpha = 0.9)) +
+      geom_bar(stat = "identity") + 
+      geom_text(aes(label = Freq), 
+                hjust = -0.5, 
+                position = position_dodge(width = 0.8), 
+                size = 2) +
+      theme(axis.text.x = element_text(size = 10, angle = 90, hjust = 1, vjust = 1)) +
+      labs(y = "Number of samples within cluster", x = "Cluster name") +
+      scale_color_identity() +
+      scale_fill_identity() +
+      coord_flip() +
+      scale_alpha(guide = "none") +
+      theme_classic()
+    
+  }, height = 1000, width = 550)  
   
   
 }
+
+
+
+
 
 # Run the application
 shinyApp(ui = ui, server = server)
