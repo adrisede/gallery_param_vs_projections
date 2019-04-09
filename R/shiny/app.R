@@ -1,10 +1,13 @@
 library(shiny)
+library(shinyjs)
 library(tibble)
 library(ggplot2)
 library(dplyr)
 library(shinythemes)
 library(shinydashboard)
+library(shinycssloaders)
 library(scrattch.io)
+library(shinyBS)
 library(DT)
 options(shiny.reactlog = TRUE)
 
@@ -29,129 +32,241 @@ anno <- anno[match(samples, anno$sample_name),]
 # Define UI for application, use bootstrap's grid system to layout app
 ui <- dashboardPage(
   
-  # theme
-  #theme = shinytheme("flatly"),
-  
+
   # Application title and message icon info
   dashboardHeader(
     title = "Projection parameter gallery",
-    titleWidth = 500,
+    titleWidth = 310,
     dropdownMenu(
       type = "messages",
       messageItem(
         from = "Reference dataset:",
-        message = "mouse_V1_ALM_20180520", 
-        icon = icon("info"),
-        time = "2019-04-04"
-      ), 
+        message = "mouse_V1_ALM_20180520",
+        icon = icon("info")
+        #time = "2019-04-04"
+      ),
       messageItem(
-        from = "Data:", 
+        from = "Data:",
         message = "23833 samples, 133 clusters",
-        icon = icon("info"),
-        time = "2019-04-04"
+        icon = icon("info")
+        #time = "2019-04-04"
       )
     )
   ),
   
   # remove sidebar
-  dashboardSidebar(disable = TRUE),
+  dashboardSidebar(#disable = TRUE,
+    width = 200,
+    sidebarMenu(
+      menuItem("Cluster Samples", tabName = "clustersamples", icon = icon("chart-area")),
+      menuItem("Sample summary", tabName = "summary", icon = icon("table"))
+    )
+  ),
+  
   # split window by = widths
   dashboardBody(
-    # make dropdown boxes smaller
-    tags$style(
-      type = 'text/css',
-      ".selectize-input { padding: 2px; min-height: 0;} .selectize-dropdown { line-height: 10px; }"
-    ),
     
-    # fix color of title
-    tags$head(tags$style(
-      HTML(
-        '
+    useShinyjs(),
+    
+    tabItems(
+      tabItem(tabName = "clustersamples", 
+              # make dropdown boxes smaller
+              tags$style(
+                type = 'text/css',
+                ".selectize-input { padding: 2px; min-height: 0;} .selectize-dropdown { line-height: 10px; }"
+              ),
+              
+              # fix color of title
+              tags$head(tags$style(
+                HTML(
+                  '
+        /* logo * /
         .skin-blue .main-header .logo {
         background-color: #3c8dbc;
         }
+
+        /* logo when hovered */
         .skin-blue .main-header .logo:hover {
         background-color: #3c8dbc;
         }
-        '
-      )
-    )),
-    
-    # left panel
-    box(
-      width = 6,
-      #title = "Parameters",
-      #solidHeader = TRUE,
-      status = "primary",
-      uiOutput("select_projection_method_left"),
-      conditionalPanel(
-        condition = "input.proj_method_left == 'tsne'",
-        fluidRow(column(6, uiOutput("select_initial_dims_left")),
-                 column(6, uiOutput("select_perplexity_left"))),
-        fluidRow(column(6, uiOutput("select_theta_left")),
-                 column(6, uiOutput("select_eta_left"))),
-        uiOutput("select_exaggeration_factor_left")
-                # fluidRow(column(6, uiOutput("select_exaggeration_factor_left")),
-        #          column(6, uiOutput("empty")))
+
+        /* navbar (rest of the header) */
+        .skin-blue .main-header .navbar {
+        background-color: #3c8dbc;
+        }
+
+        /* main sidebar */
+        .skin-blue .main-sidebar {
+        background-color: #ecf0f5;
+        }
+                  
+        /* active selected tab in the sidebarmenu */
+        .skin-blue .main-sidebar .sidebar .sidebar-menu .active a{
+        background-color: #3c8dbc;
+        }
+                  
+        /* other links in the sidebarmenu */
+        /* .skin-blue .main-sidebar .sidebar .sidebar-menu a{  */
+        /* background-color: #f4f6f7;*/
+        /* color: #f4f6f7;*/
+        /* } */
+                  
+        /* other links in the sidebarmenu when hovered */
+        /* .skin-blue .main-sidebar .sidebar .sidebar-menu a:hover{ */
+        /* background-color: #f4f6f7; */
+        /* } */
+                  
+        /* toggle button when hovered  */
+        /* .skin-blue .main-header .navbar .sidebar-toggle:hover{ */
+        /* background-color: #f4f6f7; */
+        /* } */
+                  
+        /* body */
+        /content-wrapper, .right-side {
+        background-color: #f4f6f7;
+        }
+
+        .skin-blue .wrapper {
+         background-color: #f4f6f7;
+        }
+
+        '))),
+              
+              # left panel
+              box(
+                width = 6,
+                collapsible = TRUE, 
+                #title = "Parameters",
+                #solidHeader = TRUE,
+                status = "primary",
+                uiOutput("select_projection_method_left"),
+                conditionalPanel(
+                  condition = "input.proj_method_left == 'tsne'",
+                  fluidRow(column(6, uiOutput("select_initial_dims_left")),
+                           column(6, uiOutput("select_perplexity_left"))),
+                  fluidRow(column(6, uiOutput("select_theta_left")),
+                           column(6, uiOutput("select_eta_left"))),
+                  #uiOutput("select_exaggeration_factor_left"),
+                  fluidRow(column(6, uiOutput("select_exaggeration_factor_left")),
+                           column(6, " ")),
+                  bsTooltip("select_initial_dims_left", 
+                            "Num. dimensions that should be retained in initial PCA step",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_perplexity_left", 
+                            "Number of effective nearest neighbors",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_theta_left", 
+                            "Speed/accuracy trade-off (increase for less accuracy)",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_eta_left", 
+                            "Learning rate (epsilon)",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_exaggeration_factor_left", 
+                            "Factor used to multiply the matrix in the first part of the optimization",
+                            "right", trigger = "focus", options = list(container = "body"))
+                  
+                ),
+                conditionalPanel(
+                  condition = "input.proj_method_left == 'umap'",
+                  fluidRow(column(6, uiOutput("select_neighbors_left")),
+                           column(6, uiOutput("select_metric_left"))),
+                  fluidRow(column(6, uiOutput("select_scale_left")),
+                           column(6, uiOutput("select_init_left"))),
+                  # fluidRow(column(6, " "),
+                  # column(6, " ")),
+                  bsTooltip("select_neighbors_left", 
+                            "Size of local neighborhood used for manifold approximation",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_metric_left", 
+                            "Distance metric to find nearest neighbors",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_scale_left", 
+                            "Scaling to apply (determines how clustered the embedded points are)",
+                            "right", trigger = "focus", options = list(container = "body")),
+                  bsTooltip("select_init_left", 
+                            "Init for coordinates: Laplacian (w/o noise, modified), Gaussian or scaled",
+                            "right", trigger = "focus", options = list(container = "body"))
+                )
+              ),
+              
+              # right panel
+              box(
+                width = 6,
+                collapsible = TRUE, 
+                #title = "Parameters",
+                #solidHeader = TRUE,
+                status = "info",
+                uiOutput("select_projection_method_right"),
+                conditionalPanel(
+                  condition = "input.proj_method_right == 'tsne'",
+                  fluidRow(column(6, uiOutput("select_initial_dims_right")),
+                           column(6, uiOutput("select_perplexity_right"))),
+                  fluidRow(column(6, uiOutput("select_theta_right")),
+                           column(6, uiOutput("select_eta_right"))),
+                  #uiOutput("select_exaggeration_factor_right")
+                  fluidRow(column(6, uiOutput("select_exaggeration_factor_right")),
+                           column(6, " "))
+                ),
+                conditionalPanel(
+                  condition = "input.proj_method_right == 'umap'",
+                  fluidRow(column(6, uiOutput("select_neighbors_right")),
+                           column(6, uiOutput("select_metric_right"))),
+                  fluidRow(column(6, uiOutput("select_scale_right")),
+                           column(6, uiOutput("select_init_right")))
+                  # fluidRow(column(6, " "),
+                  # column(6, " "))
+                )
+              ),
+              
+              # left plot
+              box(width = 6,
+                  status = "primary",
+                  withSpinner(plotOutput(
+                    "plot_left", brush = brushOpts(id = "plot_left_brush")), 
+                    type = 7, size = 0.4
+                  )),
+              
+              # right plot
+              box(width = 6,
+                  status = "info",
+                  withSpinner(plotOutput(
+                    "plot_right", brush = brushOpts(id = "plot_right_brush")), 
+                    type = 7, size = 0.4
+                  )),
+              
+              # info table left
+              box(width = 6,
+                  status = "primary",
+                  collapsible = TRUE,
+                  #collapsed = TRUE,
+                  dataTableOutput("table_left")),
+              
+              # info table right
+              box(width = 6,
+                  status = "info",
+                  collapsible = TRUE,
+                  #collapsed = TRUE,
+                  dataTableOutput("table_right"))
       ),
-      conditionalPanel(
-        condition = "input.proj_method_left == 'umap'",
-        fluidRow(column(6, uiOutput("select_neighbors_left")),
-                 column(6, uiOutput("select_metric_left"))),
-        fluidRow(column(6, uiOutput("select_scale_left")),
-                 column(6, uiOutput("select_init_left")))
-      )
-    ),
-    
-    # right panel
-    box(
-      width = 6,
-      #title = "Parameters",
-      #solidHeader = TRUE,
-      status = "primary",
-      uiOutput("select_projection_method_right"),
-      conditionalPanel(
-        condition = "input.proj_method_right == 'tsne'",
-        fluidRow(column(6, uiOutput("select_initial_dims_right")),
-                 column(6, uiOutput("select_perplexity_right"))),
-        fluidRow(column(6, uiOutput("select_theta_right")),
-                 column(6, uiOutput("select_eta_right"))),
-        uiOutput("select_exaggeration_factor_right")
-                # fluidRow(column(6, uiOutput("select_exaggeration_factor_right")),
-        #          column(6, uiOutput("empty")))
-      ),
-      conditionalPanel(
-        condition = "input.proj_method_right == 'umap'",
-        fluidRow(column(6, uiOutput("select_neighbors_right")),
-                 column(6, uiOutput("select_metric_right"))),
-        fluidRow(column(6, uiOutput("select_scale_right")),
-                 column(6, uiOutput("select_init_right")))
-      )
-    ),
-    
-    # left plot
-    box(width = 6,
-        plotOutput(
-          "plot_left", brush = brushOpts(id = "plot_left_brush")
-        )),
-    
-    # right plot
-    box(width = 6,
-        plotOutput(
-          "plot_right", brush = brushOpts(id = "plot_right_brush")
-        )),
-    
-    # info table left
-    box(width = 6,
-        collapsible = TRUE, 
-        dataTableOutput("table_left")),
-    
-    # info table right
-    box(width = 6,
-        collapsible = TRUE,
-        dataTableOutput("table_right"))
+      
+      
+      # second tab content
+      tabItem(tabName = "summary", 
+          
+              fluidRow(column(4, valueBox("Dataset", "mouse_V1_ALM_20180520", icon = icon("database"), width = 11)),
+                  column(4, valueBox("Size", "23822 samples, 133 clusters", icon = icon("box"), width = 11))), 
+              
+              box(width = 8,
+                  height = 1040,
+                  status = "primary",
+                plotOutput("summary")))
+              )
+    )
   )
-)
+  
+
+
+
 
 
 #################
@@ -163,25 +278,58 @@ ui <- dashboardPage(
 # use unique input id's
 # to read reactive values it requires a function to listen to the reactive elements
 
-server <- function(input, output) {
+server <- function(input, output, session) {
+
   
+  addClass(selector = "body", class = "sidebar-collapse")
   
+  output$summary <- renderPlot({
+    
+    anno_min <- select(anno, cluster_label, cluster_color) %>% 
+      unique()
+    
+    summary <- as.data.frame(with(anno, table(cluster_label))) %>%
+      left_join(anno_min, by = "cluster_label") %>%
+      arrange(desc(Freq)) 
+    
+    ggplot(summary, aes(x = reorder(cluster_label, Freq), 
+                        y = Freq, 
+                        color = cluster_color, 
+                        fill = cluster_color,
+                        alpha = 0.7)) +
+      geom_bar(stat = "identity") + 
+      geom_text(aes(label = Freq), 
+                hjust = -0.5, 
+                position = position_dodge(width = 0.8), 
+                size = 2) +
+      theme(axis.text.x = element_text(size = 10, angle = 90, hjust = 1, vjust = 1)) +
+      labs(y = "Number of samples within cluster", x = "Cluster name") +
+      scale_color_identity() +
+      scale_fill_identity() +
+      coord_flip() +
+      scale_alpha(guide = "none") +
+      theme_classic()
+
+  }, height = 1000, width = 550)  
+  
+
   #######################
   ##     left BLOCK    ##
   #######################
   
-  ### 1)  TSNE PARAMS 
+  ### 1)  TSNE PARAMS  
   
   # original rendering
   output$select_projection_method_left <- renderUI({
     id <- "proj_method_left"
     label <- "Projection Method"
-    
+
     selectInput(
       inputId = id,
       label = label,
       # ui label displayed matched to data label
-      choices = c("t-SNE" = "tsne", "UMAP" = "umap")
+      choices = c("t-SNE" = "tsne", "UMAP" = "umap"),
+      selected = "tsne"
     )
   })
   
@@ -299,11 +447,12 @@ server <- function(input, output) {
   output$select_projection_method_right <- renderUI({
     id = "proj_method_right"
     label = "Projection Method"
-    
+
     selectInput(
       inputId = id,
       label = label,
       # ui label displayed matched to data label
+      #choices <- choices
       choices = c("t-SNE" = "tsne", "UMAP" = "umap"),
       selected = "tsne"
     )
@@ -441,13 +590,14 @@ server <- function(input, output) {
   
   data_left <- reactive({
     
+    if (input$proj_method_left == 'tsne') {
+      
     req(input$initial_dims_left)
     req(input$perplexity_left)
     req(input$theta_left)
     req(input$eta_left)
     req(input$exaggeration_factor_left)
-    #req(input$select_projection_method_left)
-    
+
     all_data <- tsne_params
     
     selected_data <- all_data %>%
@@ -472,37 +622,38 @@ server <- function(input, output) {
     
     selected_coords
     
-    # if (input$select_projection_method_left == 'umap') {
-    #   req(input$neighbors_left)
-    #   req(input$metric_left)
-    #   req(input$scale_left)
-    #   req(input$init_left)
-    # 
-    #     all_data <- umap_params
-    # 
-    #     selected_data <- all_data %>%
-    #     dplyr::filter(
-    #       n_neighbors == input$neighbors_left,
-    #       metric == input$metric_left,
-    #       scale == input$scale_left,
-    #       init == input$init_left
-    #       )
-    # 
-    #     selected_data <- selected_data[1,]
-    # 
-    #     selected_coords <- selected_data$UMAP
-    # 
-    #     # make df for ggplot
-    #     selected_coords <- as.data.frame(selected_coords)
-    #     names(selected_coords) <- c("x", "y")
-    # 
-    #     # join sample annots with coordinates
-    #     selected_coords <- cbind(anno, selected_coords)
-    # 
-    #     selected_coords
-    # 
-    #     }
+  } else if (input$proj_method_left == 'umap') {
     
+    req(input$neighbors_left)
+    req(input$metric_left)
+    req(input$scale_left)
+    req(input$init_left)
+
+      all_data <- umap_params
+
+      selected_data <- all_data %>%
+      dplyr::filter(
+        n_neighbors == input$neighbors_left,
+        metric == input$metric_left,
+        scale == input$scale_left,
+        init == input$init_left
+        )
+
+      selected_data <- selected_data[1,]
+
+      selected_coords <- selected_data$UMAP
+
+      # make df for ggplot
+      selected_coords <- as.data.frame(selected_coords)
+      names(selected_coords) <- c("x", "y")
+
+      # join sample annots with coordinates
+      selected_coords <- cbind(anno, selected_coords)
+
+      selected_coords
+
+      }
+
   })
   
   selected_samples_left <- reactive({
@@ -528,8 +679,11 @@ server <- function(input, output) {
               # rename columns
               colnames = c("Sample" = 1, "Cluster" = 2),
               # remove search bar and limit output
-              options = list(#dom = 't',
-                pageLength = 3)
+              options = list(
+                dom = 'tp', 
+                pagingType = 'simple_numbers',
+                responsive = TRUE,
+                pageLength = 4)
     )
   })
   
@@ -541,7 +695,7 @@ server <- function(input, output) {
     if (isTruthy(selected_samples_right())) {
       selected_coords$selected <- selected_coords$sample_name %in% selected_samples_right()
       selected_coords$alpha <- ifelse(selected_coords$selected,
-                                      1, 0.0001)
+                                      1, 0.01)
     } else {
       selected_coords$selected <- FALSE
       selected_coords$alpha <- 1
@@ -558,6 +712,8 @@ server <- function(input, output) {
   
   
   data_right <- reactive({
+    
+    if (input$proj_method_right == 'tsne') {
     
     req(input$initial_dims_right)
     req(input$perplexity_right)
@@ -589,33 +745,33 @@ server <- function(input, output) {
     
     selected_coords
     
-    # if (input$proj_method_right == "umap") {
-    # 
-    #   req(input$neighbors_right)
-    #   req(input$metric_right)
-    #   req(input$scale_right)
-    #   req(input$init_right)
-    # 
-    #   all_data <- umap_params
-    #   selected_data <- all_data %>%
-    #     dplyr::filter(
-    #       n_neighbors == input$neighbors_right,
-    #       metric == input$metric_right,
-    #       scale == input$scale_right,
-    #       init == input$init_right)
-    # 
-    #   selected_data <- selected_data[1,]
-    #   selected_coords <- selected_data$UMAP
-    # 
-    #   # make df for ggplot
-    #   selected_coords <- as.data.frame(selected_coords)
-    #   names(selected_coords) <- c("x", "y")
-    # 
-    #   # run this when we have the correct tsne to match colors properly
-    #   selected_coords <- cbind(anno, selected_coords)
-    # 
-    #   selected_coords
-    # }
+    } else if (input$proj_method_right == "umap") {
+
+      req(input$neighbors_right)
+      req(input$metric_right)
+      req(input$scale_right)
+      req(input$init_right)
+
+      all_data <- umap_params
+      selected_data <- all_data %>%
+        dplyr::filter(
+          n_neighbors == input$neighbors_right,
+          metric == input$metric_right,
+          scale == input$scale_right,
+          init == input$init_right)
+
+      selected_data <- selected_data[1,]
+      selected_coords <- selected_data$UMAP
+
+      # make df for ggplot
+      selected_coords <- as.data.frame(selected_coords)
+      names(selected_coords) <- c("x", "y")
+
+      # run this when we have the correct tsne to match colors properly
+      selected_coords <- cbind(anno, selected_coords)
+
+      selected_coords
+    }
     
   })
   
@@ -627,6 +783,7 @@ server <- function(input, output) {
     selected_data$sample_name
     
   })
+  
   
   output$table_right <- renderDataTable({
     req(data_right())
@@ -640,9 +797,11 @@ server <- function(input, output) {
       data,
       rownames = FALSE,
       colnames = c("Sample" = 1, "Cluster" = 2),
-      options = list(#dom = 't',
-        pageLength = 3
-      )
+      options = list(
+        dom = 'tp', 
+        pagingType = 'simple_numbers',
+        responsive = TRUE,
+        pageLength = 4)
     )
     
   })
@@ -656,7 +815,7 @@ server <- function(input, output) {
       selected_coords$selected <-
         selected_coords$sample_name %in% selected_samples_left()
       selected_coords$alpha <- ifelse(selected_coords$selected,
-                                      1, 0.0001)
+                                      1, 0.01)
     } else {
       selected_coords$selected <- FALSE
       selected_coords$alpha <- 1
@@ -686,7 +845,8 @@ server <- function(input, output) {
       ),
       show.legend = FALSE) +
       scale_color_identity() +
-      scale_fill_identity() +
+      scale_alpha_identity() +
+      #scale_fill_identity() +
       theme_void()
   })
   
@@ -710,9 +870,19 @@ server <- function(input, output) {
       ),
       show.legend = FALSE) +
       scale_color_identity() +
-      scale_fill_identity() +
+      scale_alpha_identity() +
+      #scale_fill_identity() +
       theme_void()
   })
+  
+  
+  # plot pop-up
+  addPopover(session, "plot_left", 
+             title = "Select samples",
+content = paste0("Select a plot region to retrieve sample info and 
+                 highlight their location on the adjacent plot. 
+                 Click in white space to reset selection."), 
+            trigger = 'hover', placement = "bottom")
   
   
 }
