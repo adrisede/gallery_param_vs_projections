@@ -1,0 +1,120 @@
+---
+title: "UMAP projection gallery"
+output: 
+ flexdashboard::flex_dashboard:
+   orientation: columns
+   source_code: embed
+runtime: shiny
+---
+
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(shiny)
+library(ggplot2)
+library(dplyr)
+library(uwot)
+library(bigstatsr)
+#norm_counts <- readRDS("norm_counts.rda")
+#norm_counts <- as_FBM(norm_counts, backingfile = "matrix")$save()
+norm_counts <- bigstatsr::big_attach("matrix.rds")
+anno <- readRDS(file = "anno.rda")
+```
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r context="render"}
+
+sliderInput("n_neighbors", "Number of neighbors", 
+            min = 2, max = 100, value = 15,
+            round = 0)
+
+sliderInput("n_trees", "Number of trees", 
+            min = 2, max = 100, value = 50,
+            round = 0)
+
+sliderInput("mindist", "Minimum distance between points",
+            min = 0.01, max = 0.1, value = 0.01)
+
+sliderInput("spread", "Spread",
+            min = 1, max = 5, value = 1)
+
+sliderInput("set_op_mix_ratio", "Interpolate between fuzzy union and intersection", min = 0.1, max = 1, value = 0.5)
+
+sliderInput("local_connectivity", "NUmber nearest neighbors connected locally",
+            min = 1, max = 2, value = 1)
+
+sliderInput("bandwidth", "Bandwidth of kernel", min = 1, max = 10, value = 1)
+
+sliderInput("repulsion_strength", "Repulsion strength", min = 1, max = 5, value = 1)
+
+sliderInput("negative_sample_rate", "Negative sample rate", min = 2, max = 0, value = 5)
+
+selectInput("metric", "Metric",
+            choices = c("euclidean", "cosine", "manhattan", "hamming"),
+            selected = c("euclidean"))
+
+selectInput("scale",
+            "Scale",
+            choices = c("none", "scale", "maxabs", "range", "colrange"),
+            selected = c("none"))
+
+selectInput("init",
+            "Initialization for the coordinates",
+            choices = c("spectral", "normlaplacian", "random", "lvrandom", "laplacian", "pca", "spca", "agspectral"),
+            selected = c("spectral"))
+
+actionButton("update", "Update view")
+
+
+
+```
+
+Outputs
+-----------------------------------------------------------------------
+
+```{r context="server"}
+umap_data <- eventReactive(input$update, {
+  out <- uwot::umap(norm_counts[],
+                    n_neighbors = input$n_neighbors,
+                    metric = input$metric,
+                    scale = input$scale,
+                    init = input$init,
+                    spread = input$spread,
+                    min_dist = input$mindist,
+                    set_op_mix_ratio = input$set_op_mix_ratio,
+                    local_connectivity = input$local_connectivity,
+                    bandwidth = input$bandwidth,
+                    repulsion_strength = input$repulsion_strength,
+                    negative_sample_rate = input$negative_sample_rate,
+                    n_trees = input$n_trees
+                    )
+  out <- as.data.frame(out)
+  names(out) <- c("x", "y")
+  out <- cbind(anno, out)
+}, ignoreNULL = FALSE)
+
+
+output$plot <- renderPlot({
+  plot_data <- umap_data()
+  ggplot(plot_data) +
+    geom_point(aes(x = x,
+                   y = y,
+                   #alpha = alpha,
+                   color = cluster_color),
+               show.legend = FALSE) +
+    scale_color_identity() +
+    #scale_alpha_identity() +
+    theme_void()
+  
+})
+```
+
+### UMAP plot
+
+```{r context="render"}
+plotOutput("plot")
+```
+
+
